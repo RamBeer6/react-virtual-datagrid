@@ -1,6 +1,5 @@
 import type { SaleRow } from '../types'
 
-// Mulberry32 PRNG for stable dataset
 function mulberry32(seed: number) {
   return function () {
     let t = (seed += 0x6d2b79f5)

@@ -4,9 +4,9 @@ export interface SaleRow {
   id: number
   customer: string
   category: 'Hardware' | 'Software' | 'Services'
-  price: number // gross price
-  cost: number  // internal cost
+  price: number
+  cost: number 
   quantity: number
-  date: string  // ISO date string
+  date: string  
   status: OrderStatus
 }

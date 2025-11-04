@@ -5,7 +5,7 @@ import {
   getSortedRowModel,
   useReactTable,
 } from '@tanstack/react-table'
-import type { ColumnDef, SortingState } from '@tanstack/react-table'  // ⬅️ type-only
+import type { ColumnDef, SortingState } from '@tanstack/react-table' 
 import { useVirtualizer } from '@tanstack/react-virtual'
 import type { SaleRow } from '../types'
 
