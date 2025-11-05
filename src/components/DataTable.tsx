@@ -1,4 +1,5 @@
 import React from 'react'
+import { downloadCSV } from '../lib/csv'
 import {
   flexRender,
   getCoreRowModel,
@@ -70,6 +71,56 @@ export function DataTable({ data }: Props) {
     debugTable: false,
   })
 
+  // יוצר dataset ל-CSV מהמודל של הטבלה (אחרי סינון ומיון)
+  const buildCsvRows = React.useCallback(() => {
+    // עמודות שיוצאות ל-CSV: משתמשים בעמודות הנראות (visible leaf columns)
+    const cols = table.getVisibleLeafColumns();
+
+    // ממפים את כל השורות במודל (כבר אחרי filter+sort)
+    const rows = table.getRowModel().rows.map(r => {
+      const out: Record<string, unknown> = {};
+
+      cols.forEach(col => {
+        const id = col.id; // לדוגמה: 'customer', 'price', 'marginPct'...
+
+        // כותרת קריאה: אם header הוא מחרוזת – נשתמש בה; אחרת id
+        const header = typeof col.columnDef.header === 'string'
+          ? col.columnDef.header
+          : id;
+
+        // ערך התא:
+        // עבור עמודות accessor (accessorKey) – row.getValue(id) עובד.
+        // עבור עמודה מחושבת 'marginPct' – נחשב ידנית מה-raw.
+        let value: unknown;
+
+        if (id === 'marginPct') {
+          const price = r.original.price;
+          const cost = r.original.cost;
+          const pct = price > 0 ? ((price - cost) / price) * 100 : 0;
+          value = pct.toFixed(1);
+        } else if (id === 'date') {
+          // ל-CSV נעדיף ISO כדי שיישמר ערך חד-משמעי
+          value = new Date(r.original.date).toISOString().slice(0, 10);
+        } else {
+          value = r.getValue(id as any);
+        }
+
+        out[header] = value;
+      });
+
+      return out;
+    });
+
+    return rows;
+  }, [table]);
+
+  const handleExport = React.useCallback(() => {
+    const rows = buildCsvRows();
+    const ts = new Date().toISOString().replace(/[:T]/g, '-').slice(0, 16);
+
+    downloadCSV(`datagrid-export-${ts}`, rows);
+  }, [buildCsvRows]);
+
   const parentRef = React.useRef<HTMLDivElement>(null)
   const rowVirtualizer = useVirtualizer({
     count: table.getRowModel().rows.length,
@@ -99,7 +150,12 @@ export function DataTable({ data }: Props) {
           search={search}
           onChange={setSearch}
           onReset={() => setSearch('')}
+          onExport={handleExport}
+          canExport={filtered.length > 0 && !error}
+          onSimError={() => setError(true)}
+          onRecover={() => setError(false)}
         />
+
         {/* מציגים את הערך המדובאנס כדי למנוע unused-warning ולהדגים UX */}
         <div className="caption">Debounced value: “{debounced || '—'}”</div>
       </div>
