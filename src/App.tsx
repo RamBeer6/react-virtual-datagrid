@@ -2,6 +2,8 @@ import React from 'react'
 import { useQuery, keepPreviousData } from '@tanstack/react-query'
 import { fetchSales } from './lib/api'
 import { DataTable } from './components/DataTable'
+import { Spinner } from './components/Spinner'
+
 
 export default function App() {
   // שליטת סימולציית שגיאה מה-UI
@@ -24,9 +26,7 @@ export default function App() {
       </div>
 
       {/* מצב טעינה ראשוני */}
-      {isLoading && (
-        <div style={{ padding: 24, textAlign: 'center' }}>Loading data…</div>
-      )}
+      {isLoading && <Spinner />}
 
       {/* מצב שגיאה */}
       {isError && (

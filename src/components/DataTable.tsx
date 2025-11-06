@@ -34,7 +34,19 @@ const columns: ColumnDef<SaleRow, any>[] = [
     },
     size: 100,
   },
-  { accessorKey: 'status', header: 'Status', size: 120 },
+  {
+    accessorKey: 'status', header: 'Status', size: 120,
+    cell: ({ getValue }) => {
+      const v = getValue<string>();
+      const color =
+        v === 'new' ? '#2b9' :
+          v === 'processing' ? '#e90' :
+            v === 'shipped' ? '#29f' :
+              '#999';
+
+      return <span style={{ color, fontWeight: 600 }}>{v}</span>;
+    }
+  },
   { accessorKey: 'date', header: 'Date', cell: ({ getValue }) => new Date(getValue<string>()).toLocaleDateString(), size: 140 },
 ]
 
@@ -69,6 +81,8 @@ export function DataTable({ data }: Props) {
     getRowId: (row) => String(row.id),
     columnResizeMode: 'onChange',
     debugTable: false,
+    debugHeaders: false,
+    debugColumns: false,
   })
 
   // יוצר dataset ל-CSV מהמודל של הטבלה (אחרי סינון ומיון)
@@ -131,6 +145,7 @@ export function DataTable({ data }: Props) {
 
   const virtualRows = rowVirtualizer.getVirtualItems()
   const totalSize = rowVirtualizer.getTotalSize()
+  const hasRows = filtered.length > 0 && !error;
 
   return (
     <div className="tableShell">
@@ -190,50 +205,48 @@ export function DataTable({ data }: Props) {
 
       {/* Virtualized body */}
       <div ref={parentRef} className="tableContainer">
-        <div style={{ height: totalSize, position: 'relative' }}>
-          <table className="table" style={{ position: 'absolute', top: 0, left: 0, right: 0 }}>
-            <tbody>
-              {error ? (
-                <tr>
-                  <td
-                    colSpan={columns.length}
-                    style={{ padding: 20, textAlign: 'center', color: 'red' }}
+        <table className="table" style={hasRows ? { position: 'absolute', top: 0, left: 0, right: 0 } : undefined}>
+          <tbody>
+            {error ? (
+              // מצב שגיאה – הודעת שגיאה אחת
+              <tr>
+                <td colSpan={columns.length} style={{ padding: 20, textAlign: 'center', color: 'red' }}>
+                  Failed to load data… (simulated)
+                </td>
+              </tr>
+            ) : !hasRows ? (
+              // מצב ריק – הודעה אחת
+              <tr>
+                <td colSpan={columns.length} className="tableEmpty">
+                  No results found…
+                </td>
+              </tr>
+            ) : (
+              // מצב רגיל – מציירים רק את השורות הוירטואליות
+              virtualRows.map((vr) => {
+                const row = table.getRowModel().rows[vr.index]
+                return (
+                  <tr
+                    key={row.id}
+                    className={`tr ${vr.index % 2 === 0 ? 'even' : 'odd'}`}
+                    style={{ transform: `translateY(${vr.start}px)` }}
                   >
-                    Failed to load data… (simulated)
-                  </td>
-                </tr>
-              ) : filtered.length === 0 ? (
-                <tr>
-                  <td
-                    colSpan={columns.length}
-                    style={{ padding: 20, textAlign: 'center', opacity: 0.7 }}
-                  >
-                    No results found…
-                  </td>
-                </tr>
-              ) : (
-                virtualRows.map((vr) => {
-                  const row = table.getRowModel().rows[vr.index];
-                  return (
-                    <tr
-                      key={row.id}
-                      className={`tr ${vr.index % 2 === 0 ? 'even' : 'odd'}`}
-                      style={{ transform: `translateY(${vr.start}px)` }}
-                    >
-                      {row.getVisibleCells().map((cell) => (
-                        <td key={cell.id} className="td" style={{ width: cell.column.getSize() }}>
-                          {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                        </td>
-                      ))}
-                    </tr>
-                  );
-                })
-              )}
-            </tbody>
+                    {row.getVisibleCells().map((cell) => (
+                      <td key={cell.id} className="td" style={{ width: cell.column.getSize() }}>
+                        {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                      </td>
+                    ))}
+                  </tr>
+                )
+              })
+            )}
+          </tbody>
+        </table>
 
-
-          </table>
-        </div>
+        {/* את הרפידה (spacer) מציירים רק כשבאמת יש שורות */}
+        {hasRows && (
+          <div style={{ height: totalSize, position: 'relative' }} />
+        )}
       </div>
     </div>
   )
