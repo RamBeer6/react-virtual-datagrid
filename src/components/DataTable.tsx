@@ -21,34 +21,24 @@ const columns: ColumnDef<SaleRow, any>[] = [
   { accessorKey: 'customer', header: 'Customer' },
   { accessorKey: 'category', header: 'Category', size: 120 },
   { accessorKey: 'quantity', header: 'Qty', size: 70 },
-  { accessorKey: 'price', header: 'Price', cell: ({ getValue }) => getValue<number>().toFixed(2), size: 100 },
-  { accessorKey: 'cost', header: 'Cost', cell: ({ getValue }) => getValue<number>().toFixed(2), size: 100 },
   {
-    id: 'marginPct',
-    header: 'Margin %',
-    cell: ({ row }) => {
-      const price = row.original.price
-      const cost = row.original.cost
-      const pct = price > 0 ? ((price - cost) / price) * 100 : 0
-      return pct.toFixed(1)
-    },
-    size: 100,
+    accessorKey: 'price', header: 'Price',
+    cell: ({ getValue }) => (getValue<number>()).toFixed(2), size: 100
   },
   {
-    accessorKey: 'status', header: 'Status', size: 120,
-    cell: ({ getValue }) => {
-      const v = getValue<string>();
-      const color =
-        v === 'new' ? '#2b9' :
-          v === 'processing' ? '#e90' :
-            v === 'shipped' ? '#29f' :
-              '#999';
+    accessorKey: 'cost', header: 'Cost',
+    cell: ({ getValue }) => (getValue<number>()).toFixed(2), size: 100
+  },
 
-      return <span style={{ color, fontWeight: 600 }}>{v}</span>;
-    }
+  {
+    accessorKey: 'marginPct', header: 'Margin %',
+    cell: ({ getValue }) => (getValue<number>()).toFixed(1), size: 100
   },
-  { accessorKey: 'date', header: 'Date', cell: ({ getValue }) => new Date(getValue<string>()).toLocaleDateString(), size: 140 },
+
+  { accessorKey: 'status', header: 'Status', size: 120 },
+  { accessorKey: 'dateISO', header: 'Date', size: 140 },
 ]
+
 
 export function DataTable({ data }: Props) {
   // Table sorting (from Step 1)
@@ -139,9 +129,10 @@ export function DataTable({ data }: Props) {
   const rowVirtualizer = useVirtualizer({
     count: table.getRowModel().rows.length,
     getScrollElement: () => parentRef.current,
-    estimateSize: () => 40,
-    overscan: 10,
+    estimateSize: () => 36,
+    overscan: 5,
   })
+
 
   const virtualRows = rowVirtualizer.getVirtualItems()
   const totalSize = rowVirtualizer.getTotalSize()
