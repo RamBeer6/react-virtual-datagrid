@@ -7,8 +7,8 @@ import './index.css'
 const qc = new QueryClient({
   defaultOptions: {
     queries: {
-      retry: 1,            // נסיון אחד נוסף בשגיאה
-      staleTime: 30_000,   // נתונים “טריים” ל-30 שניות
+      retry: 1,
+      staleTime: 30_000,
       refetchOnWindowFocus: false,
     },
   },

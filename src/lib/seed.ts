@@ -42,7 +42,9 @@ export function generateSales(count = 10_000, seed = 42): SaleRow[] {
     rows.push({
       id: i,
       customer,
+      customerLC: customer.toLowerCase(),
       category,
+      categoryLC: category.toLowerCase(),
       price,
       cost,
       quantity,

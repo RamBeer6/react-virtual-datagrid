@@ -6,11 +6,9 @@ import {
   getSortedRowModel,
   useReactTable,
 } from '@tanstack/react-table'
-import type { ColumnDef, SortingState } from '@tanstack/react-table' // type-only imports
+import type { ColumnDef, SortingState } from '@tanstack/react-table'
 import { useVirtualizer } from '@tanstack/react-virtual'
 import type { SaleRow } from '../types'
-
-// NEW (Step 2.1 + 2.2):
 import { useDebounce } from '../hooks/useDebounce'
 import { Toolbar } from './Toolbar'
 
@@ -41,25 +39,20 @@ const columns: ColumnDef<SaleRow, any>[] = [
 
 
 export function DataTable({ data }: Props) {
-  // Table sorting (from Step 1)
+
   const [sorting, setSorting] = React.useState<SortingState>([])
   const [error, setError] = React.useState(false);
-
-  // NEW: Search state + debounced value (Step 2.3)
   const [search, setSearch] = React.useState('')
-  const debounced = useDebounce(search, 300) // עדיין לא מסנן איתו — רק מציגים
-  // Step 2.4 — filtering by debounced search
+  const debounced = useDebounce(search, 300)
+
   const filtered = React.useMemo(() => {
-    // אם אין חיפוש, החזר את כל הרשומות
     if (!debounced) return data;
-
     const s = debounced.toLowerCase();
-
     return data.filter((row) =>
-      row.customer.toLowerCase().includes(s) ||
-      row.category.toLowerCase().includes(s)
+      row.customerLC.includes(s) || row.categoryLC.includes(s)
     );
   }, [data, debounced]);
+
 
   const table = useReactTable({
     data: filtered,
@@ -75,26 +68,18 @@ export function DataTable({ data }: Props) {
     debugColumns: false,
   })
 
-  // יוצר dataset ל-CSV מהמודל של הטבלה (אחרי סינון ומיון)
-  const buildCsvRows = React.useCallback(() => {
-    // עמודות שיוצאות ל-CSV: משתמשים בעמודות הנראות (visible leaf columns)
-    const cols = table.getVisibleLeafColumns();
 
-    // ממפים את כל השורות במודל (כבר אחרי filter+sort)
+  const buildCsvRows = React.useCallback(() => {
+    const cols = table.getVisibleLeafColumns();
     const rows = table.getRowModel().rows.map(r => {
       const out: Record<string, unknown> = {};
 
       cols.forEach(col => {
-        const id = col.id; // לדוגמה: 'customer', 'price', 'marginPct'...
-
-        // כותרת קריאה: אם header הוא מחרוזת – נשתמש בה; אחרת id
+        const id = col.id;
         const header = typeof col.columnDef.header === 'string'
           ? col.columnDef.header
           : id;
 
-        // ערך התא:
-        // עבור עמודות accessor (accessorKey) – row.getValue(id) עובד.
-        // עבור עמודה מחושבת 'marginPct' – נחשב ידנית מה-raw.
         let value: unknown;
 
         if (id === 'marginPct') {
@@ -103,7 +88,6 @@ export function DataTable({ data }: Props) {
           const pct = price > 0 ? ((price - cost) / price) * 100 : 0;
           value = pct.toFixed(1);
         } else if (id === 'date') {
-          // ל-CSV נעדיף ISO כדי שיישמר ערך חד-משמעי
           value = new Date(r.original.date).toISOString().slice(0, 10);
         } else {
           value = r.getValue(id as any);
@@ -150,7 +134,7 @@ export function DataTable({ data }: Props) {
       </div>
 
 
-      {/* NEW: Toolbar UI */}
+      {/* Toolbar UI */}
       <div style={{ padding: '0 12px' }}>
         <Toolbar
           search={search}
@@ -162,7 +146,6 @@ export function DataTable({ data }: Props) {
           onRecover={() => setError(false)}
         />
 
-        {/* מציגים את הערך המדובאנס כדי למנוע unused-warning ולהדגים UX */}
         <div className="caption">Debounced value: “{debounced || '—'}”</div>
       </div>
 
@@ -199,21 +182,18 @@ export function DataTable({ data }: Props) {
         <table className="table" style={hasRows ? { position: 'absolute', top: 0, left: 0, right: 0 } : undefined}>
           <tbody>
             {error ? (
-              // מצב שגיאה – הודעת שגיאה אחת
               <tr>
                 <td colSpan={columns.length} style={{ padding: 20, textAlign: 'center', color: 'red' }}>
                   Failed to load data… (simulated)
                 </td>
               </tr>
             ) : !hasRows ? (
-              // מצב ריק – הודעה אחת
               <tr>
                 <td colSpan={columns.length} className="tableEmpty">
                   No results found…
                 </td>
               </tr>
             ) : (
-              // מצב רגיל – מציירים רק את השורות הוירטואליות
               virtualRows.map((vr) => {
                 const row = table.getRowModel().rows[vr.index]
                 return (
