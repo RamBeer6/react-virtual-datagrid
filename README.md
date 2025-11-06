@@ -1,73 +1,63 @@
-# React + TypeScript + Vite
+# Virtualized DataGrid Demo (React + TypeScript)
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+A high-performance data grid demo built for large datasets (10k+ rows).  
+Includes virtualization, debounced search, sorting, computed columns, CSV export, and UI empty/error states.
 
-Currently, two official plugins are available:
+---
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+## 🚀 Features
 
-## React Compiler
+- ⚡ **Virtualized rows** — smooth scrolling, constant DOM size
+- 🔍 **Debounced search**
+- 🔁 **Column sorting**
+- 🧮 **Computed column** (Margin %)
+- 📤 **CSV export** of the filtered view
+- 🧯 **Error & Recover** UI flows
+- 🙈 **Empty state** handling
+- 🧹 **Clean console** (zero warnings)
+- 🎯 Lightweight and highly performant
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+---
 
-## Expanding the ESLint configuration
+## 🧱 Tech Stack
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+- React 18
+- TypeScript
+- @tanstack/react-table
+- @tanstack/react-virtual
+- Vite
+- Custom utility hooks
 
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
+---
 
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
+## 🧠 Why Virtualization?
 
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-```
+Rendering thousands of `<tr>` elements blocks the browser.  
+Virtualization keeps **only the visible rows** in the DOM and simulates scroll height with a spacer.
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+Benefits:
+- Constant memory usage
+- Smooth FPS
+- No layout jank
+- Great UX on large datasets
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+---
 
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-```
+## 🔍 Debounced Search
+
+User input is wrapped in a `useDebounce()` hook (300ms).  
+Prevents:
+- Wasteful recalculation
+- Input jitter
+- Excess component renders
+
+Search uses pre-lowercased fields (`customerLC`, `categoryLC`) to avoid per-render string operations.
+
+---
+
+## 🧮 Computed Column (Margin %)
+
+Margin is derived at render time:
+
+```ts
+const pct = price > 0 ? ((price - cost) / price) * 100 : 0
