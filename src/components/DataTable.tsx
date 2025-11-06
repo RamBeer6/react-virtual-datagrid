@@ -19,40 +19,24 @@ const columns: ColumnDef<SaleRow, any>[] = [
   { accessorKey: 'customer', header: 'Customer' },
   { accessorKey: 'category', header: 'Category', size: 120 },
   { accessorKey: 'quantity', header: 'Qty', size: 70 },
-  {
-    accessorKey: 'price', header: 'Price',
-    cell: ({ getValue }) => (getValue<number>()).toFixed(2), size: 100
-  },
-  {
-    accessorKey: 'cost', header: 'Cost',
-    cell: ({ getValue }) => (getValue<number>()).toFixed(2), size: 100
-  },
-
-  {
-    accessorKey: 'marginPct', header: 'Margin %',
-    cell: ({ getValue }) => (getValue<number>()).toFixed(1), size: 100
-  },
-
+  { accessorKey: 'price', header: 'Price', cell: ({ getValue }) => (getValue<number>()).toFixed(2), size: 100 },
+  { accessorKey: 'cost', header: 'Cost', cell: ({ getValue }) => (getValue<number>()).toFixed(2), size: 100 },
+  { accessorKey: 'marginPct', header: 'Margin %', cell: ({ getValue }) => (getValue<number>()).toFixed(1), size: 100 },
   { accessorKey: 'status', header: 'Status', size: 120 },
   { accessorKey: 'dateISO', header: 'Date', size: 140 },
 ]
 
-
 export function DataTable({ data }: Props) {
-
   const [sorting, setSorting] = React.useState<SortingState>([])
-  const [error, setError] = React.useState(false);
+  const [error, setError] = React.useState(false)
   const [search, setSearch] = React.useState('')
   const debounced = useDebounce(search, 300)
 
   const filtered = React.useMemo(() => {
-    if (!debounced) return data;
-    const s = debounced.toLowerCase();
-    return data.filter((row) =>
-      row.customerLC.includes(s) || row.categoryLC.includes(s)
-    );
-  }, [data, debounced]);
-
+    if (!debounced) return data
+    const s = debounced.toLowerCase()
+    return data.filter((row) => row.customerLC.includes(s) || row.categoryLC.includes(s))
+  }, [data, debounced])
 
   const table = useReactTable({
     data: filtered,
@@ -68,46 +52,28 @@ export function DataTable({ data }: Props) {
     debugColumns: false,
   })
 
-
   const buildCsvRows = React.useCallback(() => {
-    const cols = table.getVisibleLeafColumns();
+    const cols = table.getVisibleLeafColumns()
     const rows = table.getRowModel().rows.map(r => {
-      const out: Record<string, unknown> = {};
-
+      const out: Record<string, unknown> = {}
       cols.forEach(col => {
-        const id = col.id;
-        const header = typeof col.columnDef.header === 'string'
-          ? col.columnDef.header
-          : id;
-
-        let value: unknown;
-
-        if (id === 'marginPct') {
-          const price = r.original.price;
-          const cost = r.original.cost;
-          const pct = price > 0 ? ((price - cost) / price) * 100 : 0;
-          value = pct.toFixed(1);
-        } else if (id === 'date') {
-          value = new Date(r.original.date).toISOString().slice(0, 10);
-        } else {
-          value = r.getValue(id as any);
-        }
-
-        out[header] = value;
-      });
-
-      return out;
-    });
-
-    return rows;
-  }, [table]);
+        const id = col.id
+        const header = typeof col.columnDef.header === 'string' ? col.columnDef.header : id
+        let value: unknown = r.getValue(id as any)
+        if (id === 'price' || id === 'cost') value = Number(value).toFixed(2)
+        if (id === 'marginPct') value = Number(value).toFixed(1)
+        out[header] = value
+      })
+      return out
+    })
+    return rows
+  }, [table])
 
   const handleExport = React.useCallback(() => {
-    const rows = buildCsvRows();
-    const ts = new Date().toISOString().replace(/[:T]/g, '-').slice(0, 16);
-
-    downloadCSV(`datagrid-export-${ts}`, rows);
-  }, [buildCsvRows]);
+    const rows = buildCsvRows()
+    const ts = new Date().toISOString().replace(/[:T]/g, '-').slice(0, 16)
+    downloadCSV(`datagrid-export-${ts}`, rows)
+  }, [buildCsvRows])
 
   const parentRef = React.useRef<HTMLDivElement>(null)
   const rowVirtualizer = useVirtualizer({
@@ -117,24 +83,17 @@ export function DataTable({ data }: Props) {
     overscan: 5,
   })
 
-
   const virtualRows = rowVirtualizer.getVirtualItems()
   const totalSize = rowVirtualizer.getTotalSize()
-  const hasRows = filtered.length > 0 && !error;
+  const hasRows = table.getRowModel().rows.length > 0 && !error
 
   return (
     <div className="tableShell">
-      <div className="caption">
-        Step 2.6: Debounced search + Empty + Error states
-      </div>
-
       <div style={{ marginBottom: 8, display: 'flex', gap: 8 }}>
         <button onClick={() => setError(true)}>Simulate Error</button>
         <button onClick={() => setError(false)}>Recover</button>
       </div>
 
-
-      {/* Toolbar UI */}
       <div style={{ padding: '0 12px' }}>
         <Toolbar
           search={search}
@@ -145,13 +104,16 @@ export function DataTable({ data }: Props) {
           onSimError={() => setError(true)}
           onRecover={() => setError(false)}
         />
-
         <div className="caption">Debounced value: “{debounced || '—'}”</div>
       </div>
 
-      {/* Header */}
       <div className="tableHeader">
         <table className="table">
+          <colgroup>
+            {table.getVisibleLeafColumns().map((col) => (
+              <col key={col.id} style={{ width: col.getSize() }} />
+            ))}
+          </colgroup>
           <thead>
             {table.getHeaderGroups().map((hg) => (
               <tr key={hg.id}>
@@ -177,46 +139,59 @@ export function DataTable({ data }: Props) {
         </table>
       </div>
 
-      {/* Virtualized body */}
       <div ref={parentRef} className="tableContainer">
-        <table className="table" style={hasRows ? { position: 'absolute', top: 0, left: 0, right: 0 } : undefined}>
-          <tbody>
-            {error ? (
-              <tr>
-                <td colSpan={columns.length} style={{ padding: 20, textAlign: 'center', color: 'red' }}>
-                  Failed to load data… (simulated)
-                </td>
-              </tr>
-            ) : !hasRows ? (
-              <tr>
-                <td colSpan={columns.length} className="tableEmpty">
-                  No results found…
-                </td>
-              </tr>
-            ) : (
-              virtualRows.map((vr) => {
-                const row = table.getRowModel().rows[vr.index]
-                return (
-                  <tr
-                    key={row.id}
-                    className={`tr ${vr.index % 2 === 0 ? 'even' : 'odd'}`}
-                    style={{ transform: `translateY(${vr.start}px)` }}
-                  >
-                    {row.getVisibleCells().map((cell) => (
-                      <td key={cell.id} className="td" style={{ width: cell.column.getSize() }}>
-                        {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                      </td>
-                    ))}
-                  </tr>
-                )
-              })
-            )}
-          </tbody>
-        </table>
-
-        {/* את הרפידה (spacer) מציירים רק כשבאמת יש שורות */}
-        {hasRows && (
-          <div style={{ height: totalSize, position: 'relative' }} />
+        {hasRows ? (
+          <>
+            <div style={{ height: totalSize, position: 'relative' }} />
+            <table className="table" style={{ position: 'absolute', top: 0, left: 0, right: 0 }}>
+              <colgroup>
+                {table.getVisibleLeafColumns().map((col) => (
+                  <col key={col.id} style={{ width: col.getSize() }} />
+                ))}
+              </colgroup>
+              <tbody>
+                {virtualRows.map((vr) => {
+                  const row = table.getRowModel().rows[vr.index]
+                  return (
+                    <tr
+                      key={row.id}
+                      className={`tr ${vr.index % 2 === 0 ? 'even' : 'odd'}`}
+                      style={{ transform: `translateY(${vr.start}px)` }}
+                    >
+                      {row.getVisibleCells().map((cell) => (
+                        <td key={cell.id} className="td" style={{ width: cell.column.getSize() }}>
+                          {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                        </td>
+                      ))}
+                    </tr>
+                  )
+                })}
+              </tbody>
+            </table>
+          </>
+        ) : (
+          <table className="table">
+            <colgroup>
+              {table.getVisibleLeafColumns().map((col) => (
+                <col key={col.id} style={{ width: col.getSize() }} />
+              ))}
+            </colgroup>
+            <tbody>
+              {error ? (
+                <tr>
+                  <td colSpan={columns.length} style={{ padding: 20, textAlign: 'center', color: 'red' }}>
+                    Failed to load data…
+                  </td>
+                </tr>
+              ) : (
+                <tr>
+                  <td colSpan={columns.length} className="tableEmpty">
+                    No results found…
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
         )}
       </div>
     </div>
